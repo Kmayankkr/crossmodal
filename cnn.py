@@ -285,7 +285,8 @@ writer = tf.summary.FileWriter('/tmp/tensorboard', graph=tf.get_default_graph())
 
 init_op = tf.global_variables_initializer()
 
-base_path = '/home/mayank/Desktop/BTP/Datasets/NUS_WIDE_10k/'
+# base_path = '/home/mayank/Desktop/BTP/Datasets/NUS_WIDE_10k/'
+base_path = '/home/btp17-18-1/datasets/NUS-WIDE-10k_Dataset/'
 nus_wide_10k_loader.setup_batch(base_path, 0.90, 0.20)
 def generate_next_batch(domain, kind):
     if domain=='source' and kind=='train':
@@ -338,11 +339,11 @@ with tf.Session() as sess:
         # _, c = sess.run([optimizer4, text_l2_loss], feed_dict={source_text_input: batch_source_text, target_text_input: batch_target_text})
         # print "Epoch:", epoch, "Text l2 loss =", c
 
-        _, c = sess.run([optimizer5, source_image_l3_loss], feed_dict={source_image_input: batch_source_image, source_label_input: batch_source_label})
-        print "Epoch:", epoch, " Source image l3 loss =", c
+        # _, c = sess.run([optimizer5, source_image_l3_loss], feed_dict={source_image_input: batch_source_image, source_label_input: batch_source_label})
+        # print "Epoch:", epoch, " Source image l3 loss =", c
 
-        _, c = sess.run([optimizer6, source_text_l3_loss], feed_dict={source_text_input: batch_source_text, source_label_input: batch_source_label})
-        print "Epoch:", epoch, " Source text l3 loss =", c
+        # _, c = sess.run([optimizer6, source_text_l3_loss], feed_dict={source_text_input: batch_source_text, source_label_input: batch_source_label})
+        # print "Epoch:", epoch, " Source text l3 loss =", c
 
         # _, c = sess.run([optimizer7, target_image_l3_loss], feed_dict={target_image_input: batch_target_image, target_label_input: batch_target_label})
         # print "Epoch:", epoch, " Target image l3 loss =", c
