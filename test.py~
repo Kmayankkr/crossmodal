@@ -1,0 +1,195 @@
+
+import tensorflow as tf
+import numpy as np
+from scipy import ndimage, misc
+import parseTagTexts
+import pdb
+
+def get_conv_layer(input_data, conv_filt_shape, name):
+    # weights and bias for the filter
+    weights = tf.Variable(tf.truncated_normal(shape=conv_filt_shape, stddev=0.03, dtype=tf.float32), name=name+'_weights')
+    bias = tf.Variable(tf.truncated_normal([conv_filt_shape[3]], stddev=0.03, dtype=tf.float32), name=name+'_bias')
+
+    # convolutional layer operation
+    output_data = tf.nn.conv2d(input_data, weights, [1, 1, 1, 1], padding='SAME')
+
+    # bias
+    output_data += bias
+
+    # ReLU non-linear activation
+    output_data = tf.nn.relu(output_data)
+
+    return output_data
+
+def get_pool_layer(input_data, pool_shape, pool_strides, name):
+    # max pooling
+    ksize = [1] + pool_shape + [1]
+    output_data = tf.nn.max_pool(input_data, ksize=ksize, strides=pool_strides, padding='SAME', name=name+'_pool')
+
+    return output_data
+
+def get_dense_layer(input_data, dense_filt_shape, activation, dropout_prob, name):
+    # weights and bias for the filter
+    weights = tf.Variable(tf.truncated_normal(shape=dense_filt_shape, stddev=0.03, dtype=tf.float32), name=name+'_weights')
+    bias = tf.Variable(tf.truncated_normal([dense_filt_shape[1]], stddev=0.03, dtype=tf.float32), name=name+'_bias')
+
+    # fully connected layer operation
+    output_data = activation(tf.matmul(input_data, weights) + bias)
+
+    return output_data
+
+def get_dropout_layer(input_data, keep_prob, name):
+    # dropout
+    output_data = tf.nn.dropout(input_data, keep_prob=keep_prob, name=name)
+
+    return output_data
+
+def get_weight(shape, name):
+    weights = tf.Variable(tf.truncated_normal(shape=shape, stddev=0.03, dtype=tf.float32), name=name+'_weights')
+    return weights
+
+def get_bias(shape, name):
+    bias = tf.Variable(tf.truncated_normal(shape=shape, stddev=0.03, dtype=tf.float32), name=name+'_bias')
+    return bias
+
+batch_size = 100
+
+image_input = tf.placeholder(tf.float32, [batch_size, 256, 256, 3])
+
+text_input = tf.placeholder(tf.float32, [batch_size, 300], 'text')
+
+label_input = tf.placeholder(tf.float32, [batch_size, 10], 'label')
+
+# architecture
+
+# image
+
+with tf.variable_scope("source_images"):
+    filter1_shape = [5, 5, 3, 64]
+    SI_conv1 = get_conv_layer(image_input, filter1_shape, 'SI_conv1')
+
+    pool1_shape = [3, 3]
+    pool1_strides = [1, 2, 2, 1]
+    SI_pool1 = get_pool_layer(SI_conv1, pool1_shape, pool1_strides, 'SI_pool1')
+
+    filter2_shape = [3, 3, filter1_shape[3], 32]
+    SI_conv2 = get_conv_layer(SI_pool1, filter2_shape, 'SI_conv2')
+
+    pool2_shape = [3, 3]
+    pool2_strides = [1, 2, 2, 1]
+    SI_pool2 = get_pool_layer(SI_conv2, pool2_shape, pool2_strides, 'SI_pool2')
+
+    filter3_shape = [3, 3, filter2_shape[3], 16]
+    SI_conv3 = get_conv_layer(SI_pool2, filter3_shape, 'SI_conv3')
+
+    pool3_shape = [3, 3]
+    pool3_strides = [1, 2, 2, 1]
+    SI_pool3 = get_pool_layer(SI_conv3, pool3_shape, pool3_strides, 'SI_pool3')
+
+    filter4_shape = [3, 3, filter3_shape[3], 8]
+    SI_conv4 = get_conv_layer(SI_pool3, filter4_shape, 'SI_conv4')
+
+    pool4_shape = [3, 3]
+    pool4_strides = [1, 2, 2, 1]
+    SI_pool4 = get_pool_layer(SI_conv4, pool4_shape, pool4_strides, 'SI_pool4')
+
+    SI_dense1 = tf.reshape(SI_pool4, [batch_size, -1], 'SI_dense1')
+
+    SI_hidden = SI_dense1
+
+# text
+
+with tf.variable_scope("source_text"):
+    text_shape = text_input.get_shape().as_list()
+
+    ST_dropout1 = get_dropout_layer(text_input, 0.2, 'ST_dropout1')
+
+    ST_dense1_num = 1024
+    ST_dense1 = get_dense_layer(ST_dropout1, [text_shape[1], ST_dense1_num], tf.nn.relu, 0.2, 'ST_dense1')
+
+    ST_dropout2 = get_dropout_layer(ST_dense1, 0.2, 'ST_dropout2')
+
+    ST_dense2_num = 2048
+    ST_dense2 = get_dense_layer(ST_dropout2, [ST_dense1_num, 2048], tf.nn.relu, 0.2, 'ST_dense2')
+
+    ST_hidden = ST_dense2
+
+# classification
+
+with tf.variable_scope("common_layers"):
+    SI_hidden_shape = SI_hidden.get_shape().as_list()
+    ST_hidden_shape = ST_hidden.get_shape().as_list()
+
+    common_input = tf.placeholder(tf.float32, SI_hidden_shape)
+    common_input_shape = common_input.get_shape().as_list()
+
+    SC_dense1_num = 512
+    SC_dense1 = get_dense_layer(common_input, [common_input_shape[1], SC_dense1_num], tf.nn.relu, 0.2, 'SC_dense1')
+    SC_dropout1 = get_dropout_layer(SC_dense1, 0.2, 'SC_dropout1')
+
+    SC_dense2_num = 128
+    SC_dense2 = get_dense_layer(SC_dropout1, [SC_dense1_num, SC_dense2_num], tf.nn.relu, 0.2, 'SC_dense1')
+    SC_dropout2 = get_dropout_layer(SC_dense2, 0.2, 'SC_dropout2')
+
+# custom loss function
+
+def euclidean_loss(mat1, mat2):
+    with tf.variable_scope("euclidean_loss"):
+        diff = tf.subtract(mat1, mat2)
+        diff_squared = tf.square(diff)
+        num_instances = tf.cast(tf.shape(mat1)[0], tf.float32)
+
+        error = tf.reduce_sum(diff_squared)
+        error = tf.div(error, num_instances)
+
+        return error
+
+def classification_loss():
+    print "do something here"
+
+l1_loss = euclidean_loss(SI_hidden, ST_hidden)
+optimizer1 = tf.train.GradientDescentOptimizer(learning_rate=0.001).minimize(loss=l1_loss, global_step=tf.train.get_global_step())
+
+writer = tf.summary.FileWriter('/tmp/tensorboard', graph=tf.get_default_graph())
+
+init_op = tf.global_variables_initializer()
+
+total_batch = 10
+epochs = 1
+
+# sampleimage = np.random.random((batch_size, 28, 28, 3))
+# sampletext = np.random.random((batch_size, 300))
+
+embedding = parseTagTexts.getWordEmbeddingsFromOutputFile('./wordEmbedding_Output.txt')
+
+def generate_next_batch():
+    tagNames, tagImageIndices = parseTagTexts.readTags('/home/mayank/Desktop/BTP/Datasets/mirflickr_25K_dataset/goodtags/')
+    image_tag_pairs = parseTagTexts.getRandomImageTagPairs(batch_size, tagNames, tagImageIndices)
+
+    batch_image = np.zeros([batch_size, 256, 256, 3])
+    batch_text = np.zeros([batch_size, 300])
+    counter = 0
+
+    for i in image_tag_pairs:
+        temp_image = ndimage.imread('/home/mayank/Desktop/BTP/Datasets/mirflickr_25K_dataset/images/im' + str(i[1]) + '.jpg')
+        temp_image = misc.imresize(temp_image, (256, 256, 3))
+        temp_text_embedding = embedding[i[0]]
+
+        batch_image[counter] = temp_image
+        batch_text[counter] = temp_text_embedding
+        counter+= 1
+
+        print i[0]
+
+    return batch_image, batch_text
+
+with tf.Session() as sess:
+    sess.run(init_op)
+
+    for epoch in range(epochs):
+        for i in range(total_batch):
+            batch_image, batch_text = generate_next_batch()
+            _, c = sess.run([optimizer1, l1_loss], feed_dict={image_input: batch_image, text_input: batch_text})
+            print "Epoch:", epoch, " Batch:", i, " Error =", c
+
+
