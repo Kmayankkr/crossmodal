@@ -317,7 +317,7 @@ def generate_next_batch(domain, kind):
 
     return batch_text, batch_image, batch_label
 
-train_epoch = 1
+train_epoch = 20
 test_epoch = 1
 
 with tf.Session() as sess:

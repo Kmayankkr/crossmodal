@@ -8,7 +8,6 @@ datasetFileListPath = "DatasetFilesList.txt"
 categoriesFilePath = "NUS-WIDE-10k-categories.txt" 
 gloveEmbeddingsFilePath = "NUS_WIDE_10k_GloveEmbeddings.txt" 
 
-
 # ['clouds', 'animal', 'flowers', 'food', 'grass', 'person', 'sky', 'toy', 'water', 'window']
 categories = [] 	# list of categories for NUS_WIDE_10k. Used for creating one hot encoding.
 fileList = [] 	#list of files in NUS_WIDE_10k dataset	
@@ -91,7 +90,6 @@ def print_vertical(xx):
 	
 # read data from file    
 def load_file(filename):
-	
 	val = [] 
 	with open(filename) as afile:
 		r = reader(afile)
@@ -118,24 +116,22 @@ def get_batch_target_test(batchSize):
 
 # Use this to get a random batch from an instance list
 def get_batch_from_instance_list(batch_size, instance_list):
-	
-	randomFiles = random.sample(range(0,len(instance_list)), batch_size)
-	batchInstances = [ instance_list[i] for i in randomFiles] 
-	
-	# contains array of [tag,imagePath,oneHotCategory]
-	ret=[] 
-	
-	for x in batchInstances:
-		zeroList=[0]*len(categories) 
-		zeroList[x[2]] = 1 
-		x[2] = zeroList 
-		ret.append(x)
-	
-	return ret
+        randomFiles = random.sample(range(0,len(instance_list)), batch_size)
+        batchInstances = [instance_list[i] for i in randomFiles]
+
+        # contains array of [tag,imagePath,oneHotCategory]
+        ret=[]
+
+        for x in batchInstances:
+                zeroList=[0]*len(categories)
+                zeroList[x[2]] = 1
+                temp = [x[0], x[1], zeroList]
+                ret.append(temp)
+
+        return ret
 
 # Load word embeddings from Glove Model for all words in tagNames
 def get_word_embeddings_from_model(filePath, tagNames):
-
 	embeddings = []
 
 	with open(filePath) as f:
