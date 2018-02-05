@@ -327,8 +327,8 @@ with tf.Session() as sess:
         batch_source_text, batch_source_image, batch_source_label = generate_next_batch('source', 'train')
         #batch_target_text, batch_target_image, batch_target_label = generate_next_batch('target', 'train')
 
-        # _, c = sess.run([optimizer1, source_l1_loss], feed_dict={source_image_input: batch_source_image, source_text_input: batch_source_text})
-        # print "Epoch:", epoch, " Batch:", batch, " Source l1 loss =", c
+        _, c = sess.run([optimizer1, source_l1_loss], feed_dict={source_image_input: batch_source_image, source_text_input: batch_source_text})
+        print "Epoch:", epoch, " Batch:", batch, " Source l1 loss =", c
 
         # _, c = sess.run([optimizer2, target_l1_loss], feed_dict={target_image_input: batch_target_image, target_text_input: batch_target_text})
         # print "Epoch:", epoch, " Batch:", batch, " Target l1 loss =", c
@@ -339,11 +339,11 @@ with tf.Session() as sess:
         # _, c = sess.run([optimizer4, text_l2_loss], feed_dict={source_text_input: batch_source_text, target_text_input: batch_target_text})
         # print "Epoch:", epoch, "Text l2 loss =", c
 
-        # _, c = sess.run([optimizer5, source_image_l3_loss], feed_dict={source_image_input: batch_source_image, source_label_input: batch_source_label})
-        # print "Epoch:", epoch, " Source image l3 loss =", c
+        _, c = sess.run([optimizer5, source_image_l3_loss], feed_dict={source_image_input: batch_source_image, source_label_input: batch_source_label})
+        print "Epoch:", epoch, " Source image l3 loss =", c
 
-        # _, c = sess.run([optimizer6, source_text_l3_loss], feed_dict={source_text_input: batch_source_text, source_label_input: batch_source_label})
-        # print "Epoch:", epoch, " Source text l3 loss =", c
+        _, c = sess.run([optimizer6, source_text_l3_loss], feed_dict={source_text_input: batch_source_text, source_label_input: batch_source_label})
+        print "Epoch:", epoch, " Source text l3 loss =", c
 
         # _, c = sess.run([optimizer7, target_image_l3_loss], feed_dict={target_image_input: batch_target_image, target_label_input: batch_target_label})
         # print "Epoch:", epoch, " Target image l3 loss =", c
@@ -353,19 +353,19 @@ with tf.Session() as sess:
 
         print
 
-    """
     batch_source_text, batch_source_image, batch_source_label = generate_next_batch('source', 'test')
-    batch_target_text, batch_target_image, batch_target_label = generate_next_batch('target', 'test')
+    # batch_target_text, batch_target_image, batch_target_label = generate_next_batch('target', 'test')
 
-    print "Test source image l3 loss =", sess.run(source_image_l3_loss, feed_dict={source_image_input: batch_source_image, source_label_input: batch_source_label})
+    print "Test source image l3 loss =", sess.run(SI_hidden, feed_dict={source_image_input: batch_source_image})
     
-    print "Test source text l3 loss =", sess.run(source_text_l3_loss, feed_dict={source_text_input: batch_source_text, source_label_input: batch_source_label})
+    print "Test source text l3 loss =", sess.run(ST_hidden, feed_dict={source_text_input: batch_source_text})
     
-    print "Test target image l3 loss =", sess.run(target_image_l3_loss, feed_dict={target_image_input: batch_target_image, target_label_input: batch_target_label})
+    # print "Test target image l3 loss =", sess.run(target_image_l3_loss, feed_dict={target_image_input: batch_target_image, target_label_input: batch_target_label})
     
-    print "Test target text l3 loss =", sess.run(target_text_l3_loss, feed_dict={target_text_input: batch_target_text, target_label_input: batch_target_label})
+    # print "Test target text l3 loss =", sess.run(target_text_l3_loss, feed_dict={target_text_input: batch_target_text, target_label_input: batch_target_label})
+
+
     """
-
     file = open('tsne_labels.csv', 'w') 
     
     embedding_var = tf.Variable(tf.truncated_normal([1, 2048]), name='embedding')
@@ -377,6 +377,7 @@ with tf.Session() as sess:
         file.write(lab)
 
     file.close()
+    """
 
 writer = tf.summary.FileWriter('/tmp/tensorboard', graph=tf.get_default_graph())
 
