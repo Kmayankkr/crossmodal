@@ -328,13 +328,13 @@ with tf.Session() as sess:
         #batch_target_text, batch_target_image, batch_target_label = generate_next_batch('target', 'train')
 
         _, c = sess.run([optimizer1, source_l1_loss], feed_dict={source_image_input: batch_source_image, source_text_input: batch_source_text})
-        print "Epoch:", epoch, " Batch:", batch, " Source l1 loss =", c
+        print "Epoch:", epoch, " Source l1 loss =", c
 
         # _, c = sess.run([optimizer2, target_l1_loss], feed_dict={target_image_input: batch_target_image, target_text_input: batch_target_text})
-        # print "Epoch:", epoch, " Batch:", batch, " Target l1 loss =", c
+        # print "Epoch:", epoch, " Target l1 loss =", c
 
         # _, c = sess.run([optimizer3, image_l2_loss], feed_dict={source_image_input: batch_source_image, target_image_input: batch_target_image})
-        # print "Epoch:", epoch, " Batch:", batch, " Image l2 loss =", c
+        # print "Epoch:", epoch, " Image l2 loss =", c
 
         # _, c = sess.run([optimizer4, text_l2_loss], feed_dict={source_text_input: batch_source_text, target_text_input: batch_target_text})
         # print "Epoch:", epoch, "Text l2 loss =", c
