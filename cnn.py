@@ -290,8 +290,8 @@ writer = tf.summary.FileWriter('/tmp/tensorboard', graph=tf.get_default_graph())
 
 init_op = tf.global_variables_initializer()
 
-# base_path = '/home/mayank/Desktop/BTP/Datasets/NUS_WIDE_10k/'
-base_path = '/home/btp17-18-1/datasets/NUS-WIDE-10k_Dataset/'
+base_path = '/home/mayank/Desktop/BTP/Datasets/NUS_WIDE_10k/'
+# base_path = '/home/btp17-18-1/datasets/NUS-WIDE-10k_Dataset/'
 nus_wide_10k_loader.setup_batch(base_path, 0.90, 0.20)
 def generate_next_batch(domain, kind):
     if domain=='source' and kind=='train':
@@ -313,8 +313,7 @@ def generate_next_batch(domain, kind):
 
         temp_image = ndimage.imread(base_path+'Dataset/' + str(image))
         temp_image = misc.imresize(temp_image, (256, 256, 3))
-        
-        # misc.imshow(temp_image)
+        batch_image[counter] = temp_image
 
         batch_label[counter] = label
 
