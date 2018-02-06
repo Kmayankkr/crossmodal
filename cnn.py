@@ -88,7 +88,7 @@ with tf.variable_scope("source_image"):
     SI_conv3 = get_conv_layer(SI_pool2, filter3_shape, 'SI_conv3')
 
     pool3_shape = [1, 3, 3, 1]
-    pool3_strides = [1, 2, 2, 1]
+    pool3_strides = [1, 4, 4, 1]
     SI_pool3 = get_pool_layer(SI_conv3, pool3_shape, pool3_strides, 'SI_pool3')
 
     filter4_shape = [3, 3, filter3_shape[3], 128]
@@ -98,7 +98,7 @@ with tf.variable_scope("source_image"):
     pool4_strides = [1, 4, 4, 1]
     SI_pool4 = get_pool_layer(SI_conv4, pool4_shape, pool4_strides, 'SI_pool4')
 
-    SI_dense1 = tf.reshape(SI_pool4, [-1, 2048], 'SI_dense1')
+    SI_dense1 = tf.reshape(SI_pool4, [1, 2048], 'SI_dense1')
 
     SI_hidden = SI_dense1
 
@@ -111,8 +111,6 @@ with tf.variable_scope("source_text"):
     ST_dense1 = get_dense_layer(source_text_input, ST_dense1_num, tf.nn.relu, 'ST_dense1')
     ST_dropout1 = get_dropout_layer(ST_dense1, 1, 'ST_dropout1')
 
-    
-
     ST_dense2_num = 2048
     ST_dense2 = get_dense_layer(ST_dropout1, ST_dense2_num, tf.nn.relu, 'ST_dense2')
     ST_dropout2 = get_dropout_layer(ST_dense2, 1, 'ST_dropout2')
@@ -122,7 +120,7 @@ with tf.variable_scope("source_text"):
 # target image
 
 with tf.variable_scope("target_image"):
-    filter1_shape = [5, 5, 3, 64]
+    filter1_shape = [5, 5, 3, 16]
     TI_conv1 = get_conv_layer(target_image_input, filter1_shape, 'TI_conv1')
 
     pool1_shape = [1, 3, 3, 1]
@@ -136,18 +134,18 @@ with tf.variable_scope("target_image"):
     pool2_strides = [1, 2, 2, 1]
     TI_pool2 = get_pool_layer(TI_conv2, pool2_shape, pool2_strides, 'TI_pool2')
 
-    filter3_shape = [3, 3, filter2_shape[3], 16]
+    filter3_shape = [3, 3, filter2_shape[3], 64]
     TI_conv3 = get_conv_layer(TI_pool2, filter3_shape, 'TI_conv3')
 
     pool3_shape = [1, 3, 3, 1]
-    pool3_strides = [1, 2, 2, 1]
+    pool3_strides = [1, 4, 4, 1]
     TI_pool3 = get_pool_layer(TI_conv3, pool3_shape, pool3_strides, 'TI_pool3')
 
-    filter4_shape = [3, 3, filter3_shape[3], 8]
+    filter4_shape = [3, 3, filter3_shape[3], 128]
     TI_conv4 = get_conv_layer(TI_pool3, filter4_shape, 'TI_conv4')
 
     pool4_shape = [1, 3, 3, 1]
-    pool4_strides = [1, 2, 2, 1]
+    pool4_strides = [1, 4, 4, 1]
     TI_pool4 = get_pool_layer(TI_conv4, pool4_shape, pool4_strides, 'TI_pool4')
 
     TI_dense1 = tf.reshape(TI_pool4, [batch_size, -1], 'TI_dense1')
