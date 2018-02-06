@@ -98,9 +98,13 @@ with tf.variable_scope("source_image"):
     pool4_strides = [1, 4, 4, 1]
     SI_pool4 = get_pool_layer(SI_conv4, pool4_shape, pool4_strides, 'SI_pool4')
 
-    SI_dense1 = tf.reshape(SI_pool4, [1, 2048], 'SI_dense1')
+    SI_dense1 = tf.reshape(SI_pool4, [1, -1], 'SI_dense1')
 
-    SI_hidden = SI_dense1
+    SI_dense2 = get_dense_layer(SI_dense1, 2048, tf.nn.relu, 'ST_dense2')
+
+    SI_dense3 = get_dense_layer(SI_dense2, 2048, tf.nn.relu, 'ST_dense3')
+
+    SI_hidden = SI_dense3
 
 # source text
 
@@ -148,7 +152,7 @@ with tf.variable_scope("target_image"):
     pool4_strides = [1, 4, 4, 1]
     TI_pool4 = get_pool_layer(TI_conv4, pool4_shape, pool4_strides, 'TI_pool4')
 
-    TI_dense1 = tf.reshape(TI_pool4, [batch_size, -1], 'TI_dense1')
+    TI_dense1 = tf.reshape(TI_pool4, [1, -1], 'TI_dense1')
 
     TI_hidden = TI_dense1
 
@@ -177,7 +181,7 @@ TT_hidden_shape = TT_hidden.get_shape().as_list()
 with tf.variable_scope("common_layer_1"):
     C_dense1_num = 512
     C_dense1_weight = get_weight([SI_hidden_shape[1], C_dense1_num], 'C_dense1_weight')
-    C_dense1_bias = get_bias([SI_hidden_shape[0], C_dense1_num], 'C_dense1_bias')
+    C_dense1_bias = get_bias([1, C_dense1_num], 'C_dense1_bias')
 
     CSI_dense1 = tf.nn.relu(tf.matmul(SI_hidden, C_dense1_weight) + C_dense1_bias, name='CSI_dense1')
     CSI_dropout1 = get_dropout_layer(CSI_dense1, 1, 'CSI_dropout1')
@@ -194,7 +198,7 @@ with tf.variable_scope("common_layer_1"):
 with tf.variable_scope("common_layer_2"):
     C_dense2_num = 128
     C_dense2_weight = get_weight([C_dense1_num, C_dense2_num], 'C_dense2_weight')
-    C_dense2_bias = get_bias([SI_hidden_shape[0], C_dense2_num], 'C_dense2_bias')
+    C_dense2_bias = get_bias([1, C_dense2_num], 'C_dense2_bias')
 
     CSI_dense2 = tf.nn.relu(tf.matmul(CSI_dropout1, C_dense2_weight) + C_dense2_bias, name='CSI_dense2')
     CSI_dropout2 = get_dropout_layer(CSI_dense2, 1, 'CSI_dropout2')
@@ -211,7 +215,7 @@ with tf.variable_scope("common_layer_2"):
 with tf.variable_scope("common_layer_3"):
     C_dense3_num = 10
     C_dense3_weight = get_weight([C_dense2_num, C_dense3_num], 'C_dense3_weight')
-    C_dense3_bias = get_bias([SI_hidden_shape[0], C_dense3_num], 'C_dense3_bias')
+    C_dense3_bias = get_bias([1, C_dense3_num], 'C_dense3_bias')
 
     CSI_dense3 = tf.nn.relu(tf.matmul(CSI_dropout2, C_dense3_weight) + C_dense3_bias, name='CSI_dense3')
     CSI_dropout3 = get_dropout_layer(CSI_dense3, 1, 'CSI_dropout3')
@@ -340,11 +344,11 @@ with tf.Session() as sess:
         # _, c = sess.run([optimizer4, text_l2_loss], feed_dict={source_text_input: batch_source_text, target_text_input: batch_target_text})
         # print "Epoch:", epoch, "Text l2 loss =", c
 
-        _, c = sess.run([optimizer5, source_image_l3_loss], feed_dict={source_image_input: batch_source_image, source_label_input: batch_source_label})
-        print "Epoch:", epoch, " Source image l3 loss =", c
+        # _, c = sess.run([optimizer5, source_image_l3_loss], feed_dict={source_image_input: batch_source_image, source_label_input: batch_source_label})
+        # print "Epoch:", epoch, " Source image l3 loss =", c
 
-        _, c = sess.run([optimizer6, source_text_l3_loss], feed_dict={source_text_input: batch_source_text, source_label_input: batch_source_label})
-        print "Epoch:", epoch, " Source text l3 loss =", c
+        # _, c = sess.run([optimizer6, source_text_l3_loss], feed_dict={source_text_input: batch_source_text, source_label_input: batch_source_label})
+        # print "Epoch:", epoch, " Source text l3 loss =", c
 
         # _, c = sess.run([optimizer7, target_image_l3_loss], feed_dict={target_image_input: batch_target_image, target_label_input: batch_target_label})
         # print "Epoch:", epoch, " Target image l3 loss =", c
