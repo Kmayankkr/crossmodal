@@ -23,8 +23,7 @@ def get_conv_layer(input_data, conv_filt_shape, name):
 
 def get_pool_layer(input_data, pool_shape, pool_strides, name):
     # max pooling
-    ksize = [1] + pool_shape + [1]
-    output_data = tf.nn.max_pool(input_data, ksize=ksize, strides=pool_strides, padding='SAME', name=name+'_pool')
+    output_data = tf.nn.max_pool(input_data, ksize=pool_shape, strides=pool_strides, padding='SAME', name=name+'_pool')
 
     return output_data
 
@@ -41,10 +40,12 @@ def get_dense_layer(input_data, num_nodes, activation, name):
 
     # weights and bias for the filter
     weights = get_weight([input_data_shape[1], num_nodes], name+'_weights')
-    bias = get_bias([input_data_shape[0], num_nodes], name+'_bias')
+    bias = get_bias([1, num_nodes], name+'_bias')
 
     # fully connected layer operation
     output_data = activation(tf.matmul(input_data, weights) + bias, name=name)
+
+    # print tf.matmul(input_data, weights).get_shape().as_list(), bias.get_shape().as_list()
 
     return output_data
 
@@ -54,7 +55,7 @@ def get_dropout_layer(input_data, keep_prob, name):
 
     return output_data
 
-batch_size = 20
+batch_size = 1
 
 source_image_input = tf.placeholder(tf.float32, [batch_size, 256, 256, 3], 'source_image')
 source_text_input = tf.placeholder(tf.float32, [batch_size, 300], 'source_text')
@@ -69,35 +70,35 @@ target_label_input = tf.placeholder(tf.float32, [batch_size, 10], 'target_label'
 # source image
 
 with tf.variable_scope("source_image"):
-    filter1_shape = [5, 5, 3, 64]
+    filter1_shape = [5, 5, 3, 16]
     SI_conv1 = get_conv_layer(source_image_input, filter1_shape, 'SI_conv1')
 
-    pool1_shape = [3, 3]
+    pool1_shape = [1, 3, 3, 1]
     pool1_strides = [1, 2, 2, 1]
     SI_pool1 = get_pool_layer(SI_conv1, pool1_shape, pool1_strides, 'SI_pool1')
 
     filter2_shape = [3, 3, filter1_shape[3], 32]
     SI_conv2 = get_conv_layer(SI_pool1, filter2_shape, 'SI_conv2')
 
-    pool2_shape = [3, 3]
+    pool2_shape = [1, 3, 3, 1]
     pool2_strides = [1, 2, 2, 1]
     SI_pool2 = get_pool_layer(SI_conv2, pool2_shape, pool2_strides, 'SI_pool2')
 
-    filter3_shape = [3, 3, filter2_shape[3], 16]
+    filter3_shape = [3, 3, filter2_shape[3], 64]
     SI_conv3 = get_conv_layer(SI_pool2, filter3_shape, 'SI_conv3')
 
-    pool3_shape = [3, 3]
+    pool3_shape = [1, 3, 3, 1]
     pool3_strides = [1, 2, 2, 1]
     SI_pool3 = get_pool_layer(SI_conv3, pool3_shape, pool3_strides, 'SI_pool3')
 
-    filter4_shape = [3, 3, filter3_shape[3], 8]
+    filter4_shape = [3, 3, filter3_shape[3], 128]
     SI_conv4 = get_conv_layer(SI_pool3, filter4_shape, 'SI_conv4')
 
-    pool4_shape = [3, 3]
-    pool4_strides = [1, 2, 2, 1]
+    pool4_shape = [1, 3, 3, 1]
+    pool4_strides = [1, 4, 4, 1]
     SI_pool4 = get_pool_layer(SI_conv4, pool4_shape, pool4_strides, 'SI_pool4')
 
-    SI_dense1 = tf.reshape(SI_pool4, [batch_size, -1], 'SI_dense1')
+    SI_dense1 = tf.reshape(SI_pool4, [-1, 2048], 'SI_dense1')
 
     SI_hidden = SI_dense1
 
@@ -109,6 +110,8 @@ with tf.variable_scope("source_text"):
     ST_dense1_num = 1024
     ST_dense1 = get_dense_layer(source_text_input, ST_dense1_num, tf.nn.relu, 'ST_dense1')
     ST_dropout1 = get_dropout_layer(ST_dense1, 1, 'ST_dropout1')
+
+    
 
     ST_dense2_num = 2048
     ST_dense2 = get_dense_layer(ST_dropout1, ST_dense2_num, tf.nn.relu, 'ST_dense2')
@@ -122,28 +125,28 @@ with tf.variable_scope("target_image"):
     filter1_shape = [5, 5, 3, 64]
     TI_conv1 = get_conv_layer(target_image_input, filter1_shape, 'TI_conv1')
 
-    pool1_shape = [3, 3]
+    pool1_shape = [1, 3, 3, 1]
     pool1_strides = [1, 2, 2, 1]
     TI_pool1 = get_pool_layer(TI_conv1, pool1_shape, pool1_strides, 'TI_pool1')
 
     filter2_shape = [3, 3, filter1_shape[3], 32]
     TI_conv2 = get_conv_layer(TI_pool1, filter2_shape, 'TI_conv2')
 
-    pool2_shape = [3, 3]
+    pool2_shape = [1, 3, 3, 1]
     pool2_strides = [1, 2, 2, 1]
     TI_pool2 = get_pool_layer(TI_conv2, pool2_shape, pool2_strides, 'TI_pool2')
 
     filter3_shape = [3, 3, filter2_shape[3], 16]
     TI_conv3 = get_conv_layer(TI_pool2, filter3_shape, 'TI_conv3')
 
-    pool3_shape = [3, 3]
+    pool3_shape = [1, 3, 3, 1]
     pool3_strides = [1, 2, 2, 1]
     TI_pool3 = get_pool_layer(TI_conv3, pool3_shape, pool3_strides, 'TI_pool3')
 
     filter4_shape = [3, 3, filter3_shape[3], 8]
     TI_conv4 = get_conv_layer(TI_pool3, filter4_shape, 'TI_conv4')
 
-    pool4_shape = [3, 3]
+    pool4_shape = [1, 3, 3, 1]
     pool4_strides = [1, 2, 2, 1]
     TI_pool4 = get_pool_layer(TI_conv4, pool4_shape, pool4_strides, 'TI_pool4')
 
