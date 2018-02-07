@@ -1,7 +1,9 @@
 
+from scipy import ndimage, misc
+from skimage import io, img_as_float, transform
+
 import tensorflow as tf
 import numpy as np
-from scipy import ndimage, misc
 import nus_wide_10k_loader
 import pdb, sys, os
 
@@ -31,8 +33,8 @@ def get_weight(shape, name):
     weights = tf.Variable(tf.truncated_normal(shape=shape, stddev=0.03, dtype=tf.float32), name=name+'_weights')
     return weights
 
-def get_bias(shape, name):
-    bias = tf.Variable(tf.truncated_normal(shape=shape, stddev=0.03, dtype=tf.float32), name=name+'_bias')
+def get_bias(num_nodes, name):
+    bias = tf.Variable(tf.truncated_normal(shape=[1, num_nodes], stddev=0.03, dtype=tf.float32), name=name+'_bias')
     return bias
 
 def get_dense_layer(input_data, num_nodes, activation, name):
@@ -40,7 +42,7 @@ def get_dense_layer(input_data, num_nodes, activation, name):
 
     # weights and bias for the filter
     weights = get_weight([input_data_shape[1], num_nodes], name+'_weights')
-    bias = get_bias([1, num_nodes], name+'_bias')
+    bias = get_bias(num_nodes, name+'_bias')
 
     # fully connected layer operation
     output_data = activation(tf.matmul(input_data, weights) + bias, name=name)
@@ -55,7 +57,7 @@ def get_dropout_layer(input_data, keep_prob, name):
 
     return output_data
 
-batch_size = 1
+batch_size = None
 
 source_image_input = tf.placeholder(tf.float32, [batch_size, 256, 256, 3], 'source_image')
 source_text_input = tf.placeholder(tf.float32, [batch_size, 300], 'source_text')
@@ -98,13 +100,9 @@ with tf.variable_scope("source_image"):
     pool4_strides = [1, 4, 4, 1]
     SI_pool4 = get_pool_layer(SI_conv4, pool4_shape, pool4_strides, 'SI_pool4')
 
-    SI_dense1 = tf.reshape(SI_pool4, [1, -1], 'SI_dense1')
+    SI_dense1 = tf.reshape(SI_pool4, [-1, 2048], 'SI_dense1')
 
-    SI_dense2 = get_dense_layer(SI_dense1, 2048, tf.nn.relu, 'ST_dense2')
-
-    SI_dense3 = get_dense_layer(SI_dense2, 2048, tf.nn.relu, 'ST_dense3')
-
-    SI_hidden = SI_dense3
+    SI_hidden = SI_dense1
 
 # source text
 
@@ -181,7 +179,7 @@ TT_hidden_shape = TT_hidden.get_shape().as_list()
 with tf.variable_scope("common_layer_1"):
     C_dense1_num = 512
     C_dense1_weight = get_weight([SI_hidden_shape[1], C_dense1_num], 'C_dense1_weight')
-    C_dense1_bias = get_bias([1, C_dense1_num], 'C_dense1_bias')
+    C_dense1_bias = get_bias(C_dense1_num, 'C_dense1_bias')
 
     CSI_dense1 = tf.nn.relu(tf.matmul(SI_hidden, C_dense1_weight) + C_dense1_bias, name='CSI_dense1')
     CSI_dropout1 = get_dropout_layer(CSI_dense1, 1, 'CSI_dropout1')
@@ -198,7 +196,7 @@ with tf.variable_scope("common_layer_1"):
 with tf.variable_scope("common_layer_2"):
     C_dense2_num = 128
     C_dense2_weight = get_weight([C_dense1_num, C_dense2_num], 'C_dense2_weight')
-    C_dense2_bias = get_bias([1, C_dense2_num], 'C_dense2_bias')
+    C_dense2_bias = get_bias(C_dense2_num, 'C_dense2_bias')
 
     CSI_dense2 = tf.nn.relu(tf.matmul(CSI_dropout1, C_dense2_weight) + C_dense2_bias, name='CSI_dense2')
     CSI_dropout2 = get_dropout_layer(CSI_dense2, 1, 'CSI_dropout2')
@@ -215,7 +213,7 @@ with tf.variable_scope("common_layer_2"):
 with tf.variable_scope("common_layer_3"):
     C_dense3_num = 10
     C_dense3_weight = get_weight([C_dense2_num, C_dense3_num], 'C_dense3_weight')
-    C_dense3_bias = get_bias([1, C_dense3_num], 'C_dense3_bias')
+    C_dense3_bias = get_bias(C_dense3_num, 'C_dense3_bias')
 
     CSI_dense3 = tf.nn.relu(tf.matmul(CSI_dropout2, C_dense3_weight) + C_dense3_bias, name='CSI_dense3')
     CSI_dropout3 = get_dropout_layer(CSI_dense3, 1, 'CSI_dropout3')
@@ -239,9 +237,9 @@ CTT_output = CTT_dropout3
 def euclidean_loss(mat1, mat2):
     with tf.variable_scope("euclidean_loss"):
         diff = tf.subtract(mat1, mat2)
-        diff_squared = tf.square(diff)
-        row_sum = tf.reduce_sum(diff_squared, 1)
-        error = tf.reduce_mean(row_sum, 0)
+        error = tf.square(diff)
+        # row_sum = tf.reduce_sum(diff_squared, 1)
+        # error = tf.reduce_mean(row_sum, 0)
 
         return error
 
@@ -293,7 +291,7 @@ init_op = tf.global_variables_initializer()
 base_path = '/home/mayank/Desktop/BTP/Datasets/NUS_WIDE_10k/'
 # base_path = '/home/btp17-18-1/datasets/NUS-WIDE-10k_Dataset/'
 nus_wide_10k_loader.setup_batch(base_path, 0.90, 0.20)
-def generate_next_batch(domain, kind):
+def generate_next_batch(domain, batch_size, kind):
     if domain=='source' and kind=='train':
         text_image_label = nus_wide_10k_loader.get_batch_source_train(batch_size)
     elif domain=='source' and kind=='test':
@@ -311,25 +309,24 @@ def generate_next_batch(domain, kind):
     for text, image, label in text_image_label:
         batch_text[counter] = text
 
-        temp_image = ndimage.imread(base_path+'Dataset/' + str(image))
-        temp_image = misc.imresize(temp_image, (256, 256, 3))
+        temp_image = io.imread(base_path+'Dataset/' + str(image))
+        temp_image = transform.resize(temp_image, (256, 256, 3))
+        temp_image = img_as_float(temp_image)
         batch_image[counter] = temp_image
-
-        batch_label[counter] = label
 
         counter+= 1
 
     return batch_text, batch_image, batch_label
 
-train_epoch = 20
+train_epoch = 10
 test_epoch = 1
 
 with tf.Session() as sess:
     sess.run(init_op)
 
     for epoch in range(train_epoch):
-        batch_source_text, batch_source_image, batch_source_label = generate_next_batch('source', 'train')
-        #batch_target_text, batch_target_image, batch_target_label = generate_next_batch('target', 'train')
+        batch_source_text, batch_source_image, batch_source_label = generate_next_batch('source', 100, 'train')
+        # batch_target_text, batch_target_image, batch_target_label = generate_next_batch('target', 'train')
 
         _, c = sess.run([optimizer1, source_l1_loss], feed_dict={source_image_input: batch_source_image, source_text_input: batch_source_text})
         print "Epoch:", epoch, " Source l1 loss =", c
@@ -357,7 +354,7 @@ with tf.Session() as sess:
 
         print
 
-    batch_source_text, batch_source_image, batch_source_label = generate_next_batch('source', 'test')
+    batch_source_text, batch_source_image, batch_source_label = generate_next_batch('source', 1, 'test')
     # batch_target_text, batch_target_image, batch_target_label = generate_next_batch('target', 'test')
 
     print "Test source image l3 loss =", sess.run(SI_hidden, feed_dict={source_image_input: batch_source_image})
