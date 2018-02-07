@@ -237,9 +237,9 @@ CTT_output = CTT_dropout3
 def euclidean_loss(mat1, mat2):
     with tf.variable_scope("euclidean_loss"):
         diff = tf.subtract(mat1, mat2)
-        error = tf.square(diff)
-        # row_sum = tf.reduce_sum(diff_squared, 1)
-        # error = tf.reduce_mean(row_sum, 0)
+        diff_squared = tf.square(diff)
+        row_sum = tf.reduce_sum(diff_squared, 1)
+        error = tf.reduce_mean(row_sum, 0)
 
         return error
 
