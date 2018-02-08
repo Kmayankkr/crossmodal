@@ -90,25 +90,35 @@ with tf.variable_scope("source_image"):
     SI_conv3 = get_conv_layer(SI_pool2, filter3_shape, 'SI_conv3')
 
     pool3_shape = [1, 3, 3, 1]
-    pool3_strides = [1, 4, 4, 1]
+    pool3_strides = [1, 2, 2, 1]
     SI_pool3 = get_pool_layer(SI_conv3, pool3_shape, pool3_strides, 'SI_pool3')
 
     filter4_shape = [3, 3, filter3_shape[3], 128]
     SI_conv4 = get_conv_layer(SI_pool3, filter4_shape, 'SI_conv4')
 
     pool4_shape = [1, 3, 3, 1]
-    pool4_strides = [1, 4, 4, 1]
+    pool4_strides = [1, 2, 2, 1]
     SI_pool4 = get_pool_layer(SI_conv4, pool4_shape, pool4_strides, 'SI_pool4')
 
-    SI_dense1 = tf.reshape(SI_pool4, [-1, 2048], 'SI_dense1')
+    filter5_shape = [3, 3, filter4_shape[3], 256]
+    SI_conv5 = get_conv_layer(SI_pool4, filter5_shape, 'SI_conv5')
 
-    SI_hidden = SI_dense1
+    pool5_shape = [1, 3, 3, 1]
+    pool5_strides = [1, 4, 4, 1]
+    SI_pool5 = get_pool_layer(SI_conv5, pool5_shape, pool5_strides, 'SI_pool5')
+
+    SI_dense1 = tf.reshape(SI_pool5, [-1, 4096], 'SI_dense1')
+    SI_dropout1 = get_dropout_layer(SI_dense1, 1, 'SI_dropout1')
+
+    SI_dense2_num = 2048
+    SI_dense2 = get_dense_layer(SI_dropout1, SI_dense2_num, tf.nn.relu, 'SI_dense2')
+    SI_dropout2 = get_dropout_layer(SI_dense2, 1, 'SI_dropout2')       
+
+    SI_hidden = SI_dropout2
 
 # source text
 
 with tf.variable_scope("source_text"):
-    text_shape = source_text_input.get_shape().as_list()
-
     ST_dense1_num = 1024
     ST_dense1 = get_dense_layer(source_text_input, ST_dense1_num, tf.nn.relu, 'ST_dense1')
     ST_dropout1 = get_dropout_layer(ST_dense1, 1, 'ST_dropout1')
@@ -118,6 +128,8 @@ with tf.variable_scope("source_text"):
     ST_dropout2 = get_dropout_layer(ST_dense2, 1, 'ST_dropout2')
 
     ST_hidden = ST_dropout2
+
+# correct until here
 
 # target image
 
@@ -288,8 +300,8 @@ writer = tf.summary.FileWriter('/tmp/tensorboard', graph=tf.get_default_graph())
 
 init_op = tf.global_variables_initializer()
 
-base_path = '/home/mayank/Desktop/BTP/Datasets/NUS_WIDE_10k/'
-# base_path = '/home/btp17-18-1/datasets/NUS-WIDE-10k_Dataset/'
+# base_path = '/home/mayank/Desktop/BTP/Datasets/NUS_WIDE_10k/'
+base_path = '/home/btp17-18-1/datasets/NUS-WIDE-10k_Dataset/'
 nus_wide_10k_loader.setup_batch(base_path, 0.90, 0.20)
 def generate_next_batch(domain, batch_size, kind):
     if domain=='source' and kind=='train':
