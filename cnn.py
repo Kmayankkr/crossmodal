@@ -313,22 +313,24 @@ def generate_next_batch(domain, batch_size, kind):
     elif domain=='target' and kind=='test':
         text_image_label = nus_wide_10k_loader.get_batch_target_test(batch_size)
 
-    batch_image = np.zeros([batch_size, 256, 256, 3])
-    batch_text = np.zeros([batch_size, 300])
-    batch_label = np.zeros([batch_size, 10])
+    image_batch = np.zeros([batch_size, 256, 256, 3])
+    image_batch = np.zeros([batch_size, 300])
+    label_batch = np.zeros([batch_size, 10])
     counter = 0
 
     for text, image, label in text_image_label:
-        batch_text[counter] = text
+        image_batch[counter] = text
 
         temp_image = io.imread(base_path+'Dataset/' + str(image))
         temp_image = transform.resize(temp_image, (256, 256, 3))
         temp_image = img_as_float(temp_image)
-        batch_image[counter] = temp_image
+        image_batch[counter] = temp_image
+
+        label_batch[counter] = label
 
         counter+= 1
 
-    return batch_text, batch_image, batch_label
+    return image_batch, image_batch, label_batch
 
 train_epoch = 10
 test_epoch = 1
@@ -337,45 +339,45 @@ with tf.Session() as sess:
     sess.run(init_op)
 
     for epoch in range(train_epoch):
-        batch_source_text, batch_source_image, batch_source_label = generate_next_batch('source', 100, 'train')
-        # batch_target_text, batch_target_image, batch_target_label = generate_next_batch('target', 'train')
+        source_text_batch, source_image_batch, batch_source_label = generate_next_batch('source', 100, 'train')
+        # target_text_batch, target_image_batch, batch_target_label = generate_next_batch('target', 'train')
 
-        _, c = sess.run([optimizer1, source_l1_loss], feed_dict={source_image_input: batch_source_image, source_text_input: batch_source_text})
+        _, c = sess.run([optimizer1, source_l1_loss], feed_dict={source_image_input: source_image_batch, source_text_input: source_text_batch})
         print "Epoch:", epoch, " Source l1 loss =", c
 
-        # _, c = sess.run([optimizer2, target_l1_loss], feed_dict={target_image_input: batch_target_image, target_text_input: batch_target_text})
+        # _, c = sess.run([optimizer2, target_l1_loss], feed_dict={target_image_input: target_image_batch, target_text_input: target_text_batch})
         # print "Epoch:", epoch, " Target l1 loss =", c
 
-        # _, c = sess.run([optimizer3, image_l2_loss], feed_dict={source_image_input: batch_source_image, target_image_input: batch_target_image})
+        # _, c = sess.run([optimizer3, image_l2_loss], feed_dict={source_image_input: source_image_batch, target_image_input: target_image_batch})
         # print "Epoch:", epoch, " Image l2 loss =", c
 
-        # _, c = sess.run([optimizer4, text_l2_loss], feed_dict={source_text_input: batch_source_text, target_text_input: batch_target_text})
+        # _, c = sess.run([optimizer4, text_l2_loss], feed_dict={source_text_input: source_text_batch, target_text_input: target_text_batch})
         # print "Epoch:", epoch, "Text l2 loss =", c
 
-        # _, c = sess.run([optimizer5, source_image_l3_loss], feed_dict={source_image_input: batch_source_image, source_label_input: batch_source_label})
+        # _, c = sess.run([optimizer5, source_image_l3_loss], feed_dict={source_image_input: source_image_batch, source_label_input: batch_source_label})
         # print "Epoch:", epoch, " Source image l3 loss =", c
 
-        # _, c = sess.run([optimizer6, source_text_l3_loss], feed_dict={source_text_input: batch_source_text, source_label_input: batch_source_label})
+        # _, c = sess.run([optimizer6, source_text_l3_loss], feed_dict={source_text_input: source_text_batch, source_label_input: batch_source_label})
         # print "Epoch:", epoch, " Source text l3 loss =", c
 
-        # _, c = sess.run([optimizer7, target_image_l3_loss], feed_dict={target_image_input: batch_target_image, target_label_input: batch_target_label})
+        # _, c = sess.run([optimizer7, target_image_l3_loss], feed_dict={target_image_input: target_image_batch, target_label_input: batch_target_label})
         # print "Epoch:", epoch, " Target image l3 loss =", c
 
-        # _, c = sess.run([optimizer8, target_text_l3_loss], feed_dict={target_text_input: batch_target_text, target_label_input: batch_target_label})
+        # _, c = sess.run([optimizer8, target_text_l3_loss], feed_dict={target_text_input: target_text_batch, target_label_input: batch_target_label})
         # print "Epoch:", epoch, " Target text l3 loss =", c
 
         print
 
-    batch_source_text, batch_source_image, batch_source_label = generate_next_batch('source', 1, 'test')
-    # batch_target_text, batch_target_image, batch_target_label = generate_next_batch('target', 'test')
+    source_text_batch, source_image_batch, batch_source_label = generate_next_batch('source', 1, 'test')
+    # target_text_batch, target_image_batch, batch_target_label = generate_next_batch('target', 'test')
 
-    print "Test source image l3 loss =", sess.run(SI_hidden, feed_dict={source_image_input: batch_source_image})
+    print "Test source image l3 loss =", sess.run(SI_hidden, feed_dict={source_image_input: source_image_batch})
     
-    print "Test source text l3 loss =", sess.run(ST_hidden, feed_dict={source_text_input: batch_source_text})
+    print "Test source text l3 loss =", sess.run(ST_hidden, feed_dict={source_text_input: source_text_batch})
     
-    # print "Test target image l3 loss =", sess.run(target_image_l3_loss, feed_dict={target_image_input: batch_target_image, target_label_input: batch_target_label})
+    # print "Test target image l3 loss =", sess.run(target_image_l3_loss, feed_dict={target_image_input: target_image_batch, target_label_input: batch_target_label})
     
-    # print "Test target text l3 loss =", sess.run(target_text_l3_loss, feed_dict={target_text_input: batch_target_text, target_label_input: batch_target_label})
+    # print "Test target text l3 loss =", sess.run(target_text_l3_loss, feed_dict={target_text_input: target_text_batch, target_label_input: batch_target_label})
 
 
     """
@@ -383,8 +385,8 @@ with tf.Session() as sess:
     
     embedding_var = tf.Variable(tf.truncated_normal([1, 2048]), name='embedding')
     for epoch in range(test_epoch):
-        batch_source_text, batch_source_image, batch_source_label = generate_next_batch('source', 'test')
-        temp_var = sess.run(SI_hidden, feed_dict={source_image_input: batch_source_image, source_text_input: batch_source_text})
+        source_text_batch, source_image_batch, batch_source_label = generate_next_batch('source', 'test')
+        temp_var = sess.run(SI_hidden, feed_dict={source_image_input: source_image_batch, source_text_input: source_text_batch})
         embedding_var = tf.concat([embedding_var, temp_var], 0)
         lab = [np.where(r==1)[0][0] for r in batch_source_label]
         file.write(lab)
