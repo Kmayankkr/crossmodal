@@ -314,12 +314,12 @@ def generate_next_batch(domain, batch_size, kind):
         text_image_label = nus_wide_10k_loader.get_batch_target_test(batch_size)
 
     image_batch = np.zeros([batch_size, 256, 256, 3])
-    image_batch = np.zeros([batch_size, 300])
+    text_batch = np.zeros([batch_size, 300])
     label_batch = np.zeros([batch_size, 10])
     counter = 0
 
     for text, image, label in text_image_label:
-        image_batch[counter] = text
+        text_batch[counter] = text
 
         temp_image = io.imread(base_path+'Dataset/' + str(image))
         temp_image = transform.resize(temp_image, (256, 256, 3))
@@ -330,7 +330,7 @@ def generate_next_batch(domain, batch_size, kind):
 
         counter+= 1
 
-    return image_batch, image_batch, label_batch
+    return text_batch, image_batch, label_batch
 
 train_epoch = 10
 test_epoch = 1
