@@ -263,12 +263,21 @@ def mmd_loss(mat1, mat2):
 
         return error
 
+# def cross_entropy_loss(mat1, mat2):
+#     with tf.variable_scope("cross_entropy_loss"):
+#         error = tf.nn.softmax_cross_entropy_with_logits(labels=mat1, logits=mat2)
+#         error = tf.reduce_mean(error, 0)
+
+#         return error    
+
 def cross_entropy_loss(mat1, mat2):
     with tf.variable_scope("cross_entropy_loss"):
-        error = tf.nn.softmax_cross_entropy_with_logits(labels=mat1, logits=mat2)
-        error = tf.reduce_mean(error, 0)
+        y = mat1
+        y_ = tf.nn.softmax(mat2)
+        y_clipped = tf.clip_by_value(y_, 1e-10, 0.9999999)
+        cross_entropy = -tf.reduce_mean(tf.reduce_sum(y * tf.log(y_clipped) + (1 - y) * tf.log(1 - y_clipped), axis=1))
 
-        return error    
+        return cross_entropy
 
 learning_rate = 0.001
 
