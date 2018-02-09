@@ -30,11 +30,13 @@ def get_pool_layer(input_data, pool_shape, pool_strides, name):
     return output_data
 
 def get_weight(shape, name):
-    weights = tf.Variable(tf.truncated_normal(shape=shape, stddev=0.03, dtype=tf.float32), name=name+'_weights')
+    initializer = tf.contrib.layers.xavier_initializer()
+    weights = tf.Variable(initializer(shape), name=name+'_weights')
     return weights
 
 def get_bias(num_nodes, name):
-    bias = tf.Variable(tf.truncated_normal(shape=[1, num_nodes], stddev=0.03, dtype=tf.float32), name=name+'_bias')
+    initializer = tf.contrib.layers.xavier_initializer()
+    bias = tf.Variable(initializer(shape), name=name+'_bias')
     return bias
 
 def get_dense_layer(input_data, num_nodes, activation, name):
@@ -125,7 +127,7 @@ def generate_next_batch(domain, kind, batch_size):
         counter+= 1
 
     return text_batch, image_batch, label_batch
-    
+
 
 batch_size = None
 
