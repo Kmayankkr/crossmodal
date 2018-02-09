@@ -97,7 +97,7 @@ def cross_entropy_loss(mat1, mat2):
 # dataset loader 
 
 # base_path = '/home/mayank/Desktop/BTP/Datasets/NUS_WIDE_10k/'
-# base_path = '/home/btp17-18-1/datasets/NUS-WIDE-10k_Dataset/'
+base_path = '/home/btp17-18-1/datasets/NUS-WIDE-10k_Dataset/'
 nus_wide_10k_loader.setup_batch(base_path, 0.90, 0.20)
 def generate_next_batch(domain, kind, batch_size):
     if domain=='source' and kind=='train':
@@ -316,7 +316,7 @@ CST_output = CST_dropout3
 CTI_output = CTI_dropout3
 CTT_output = CTT_dropout3
 
-learning_rate = 0.001
+learning_rate = 0.1
 
 source_l1_loss = euclidean_loss(SI_hidden, ST_hidden)
 optimizer1 = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).minimize(loss=source_l1_loss, global_step=tf.train.get_global_step())
