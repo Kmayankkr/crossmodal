@@ -36,7 +36,7 @@ def get_weight(shape, name):
 
 def get_bias(num_nodes, name):
     initializer = tf.contrib.layers.xavier_initializer()
-    bias = tf.Variable(initializer(shape), name=name+'_bias')
+    bias = tf.Variable(initializer([1 num_nodes]), name=name+'_bias')
     return bias
 
 def get_dense_layer(input_data, num_nodes, activation, name):
@@ -346,7 +346,7 @@ writer = tf.summary.FileWriter('/tmp/tensorboard', graph=tf.get_default_graph())
 
 init_op = tf.global_variables_initializer()
 
-train_epoch = 10
+train_epoch = 100
 test_epoch = 1
 
 with tf.Session() as sess:
