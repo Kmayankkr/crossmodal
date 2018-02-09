@@ -57,6 +57,76 @@ def get_dropout_layer(input_data, keep_prob, name):
 
     return output_data
 
+# custom loss functions
+
+def euclidean_loss(mat1, mat2):
+    with tf.variable_scope("euclidean_loss"):
+        diff = tf.subtract(mat1, mat2)
+        diff_squared = tf.square(diff)
+        row_sum = tf.reduce_sum(diff_squared, 1)
+        error = tf.reduce_mean(row_sum, 0)
+
+        return error
+
+def mmd_loss(mat1, mat2):
+    with tf.variable_scope("mmd_loss"):
+        diff = tf.subtract(mat1, mat2)
+        mmd = tf.reduce_mean(diff, 0)
+        error = tf.norm(mmd, ord='euclidean')
+
+        return error
+
+# def cross_entropy_loss(mat1, mat2):
+#     with tf.variable_scope("cross_entropy_loss"):
+#         error = tf.nn.softmax_cross_entropy_with_logits(labels=mat1, logits=mat2)
+#         error = tf.reduce_mean(error, 0)
+
+#         return error    
+
+def cross_entropy_loss(mat1, mat2):
+    with tf.variable_scope("cross_entropy_loss"):
+        y = mat1
+        y_ = tf.nn.softmax(mat2)
+        y_clipped = tf.clip_by_value(y_, 1e-10, 0.9999999)
+        cross_entropy = -tf.reduce_mean(tf.reduce_sum(y * tf.log(y_clipped) + (1 - y) * tf.log(1 - y_clipped), axis=1))
+
+        return cross_entropy
+
+# dataset loader 
+
+# base_path = '/home/mayank/Desktop/BTP/Datasets/NUS_WIDE_10k/'
+# base_path = '/home/btp17-18-1/datasets/NUS-WIDE-10k_Dataset/'
+nus_wide_10k_loader.setup_batch(base_path, 0.90, 0.20)
+def generate_next_batch(domain, kind, batch_size):
+    if domain=='source' and kind=='train':
+        text_image_label = nus_wide_10k_loader.get_batch_source_train(batch_size)
+    elif domain=='source' and kind=='test':
+        text_image_label = nus_wide_10k_loader.get_batch_source_test(batch_size)
+    elif domain=='target' and kind=='train': 
+        text_image_label = nus_wide_10k_loader.get_batch_target_train(batch_size)
+    elif domain=='target' and kind=='test':
+        text_image_label = nus_wide_10k_loader.get_batch_target_test(batch_size)
+
+    image_batch = np.zeros([batch_size, 256, 256, 3])
+    text_batch = np.zeros([batch_size, 300])
+    label_batch = np.zeros([batch_size, 10])
+    counter = 0
+
+    for text, image, label in text_image_label:
+        text_batch[counter] = text
+
+        temp_image = io.imread(base_path+'Dataset/' + str(image))
+        temp_image = transform.resize(temp_image, (256, 256, 3))
+        temp_image = img_as_float(temp_image)
+        image_batch[counter] = temp_image
+
+        label_batch[counter] = label
+
+        counter+= 1
+
+    return text_batch, image_batch, label_batch
+    
+
 batch_size = None
 
 source_image_input = tf.placeholder(tf.float32, [batch_size, 256, 256, 3], 'source_image')
@@ -244,41 +314,6 @@ CST_output = CST_dropout3
 CTI_output = CTI_dropout3
 CTT_output = CTT_dropout3
 
-# custom loss function
-
-def euclidean_loss(mat1, mat2):
-    with tf.variable_scope("euclidean_loss"):
-        diff = tf.subtract(mat1, mat2)
-        diff_squared = tf.square(diff)
-        row_sum = tf.reduce_sum(diff_squared, 1)
-        error = tf.reduce_mean(row_sum, 0)
-
-        return error
-
-def mmd_loss(mat1, mat2):
-    with tf.variable_scope("mmd_loss"):
-        diff = tf.subtract(mat1, mat2)
-        mmd = tf.reduce_mean(diff, 0)
-        error = tf.norm(mmd, ord='euclidean')
-
-        return error
-
-# def cross_entropy_loss(mat1, mat2):
-#     with tf.variable_scope("cross_entropy_loss"):
-#         error = tf.nn.softmax_cross_entropy_with_logits(labels=mat1, logits=mat2)
-#         error = tf.reduce_mean(error, 0)
-
-#         return error    
-
-def cross_entropy_loss(mat1, mat2):
-    with tf.variable_scope("cross_entropy_loss"):
-        y = mat1
-        y_ = tf.nn.softmax(mat2)
-        y_clipped = tf.clip_by_value(y_, 1e-10, 0.9999999)
-        cross_entropy = -tf.reduce_mean(tf.reduce_sum(y * tf.log(y_clipped) + (1 - y) * tf.log(1 - y_clipped), axis=1))
-
-        return cross_entropy
-
 learning_rate = 0.001
 
 source_l1_loss = euclidean_loss(SI_hidden, ST_hidden)
@@ -309,38 +344,6 @@ writer = tf.summary.FileWriter('/tmp/tensorboard', graph=tf.get_default_graph())
 
 init_op = tf.global_variables_initializer()
 
-# base_path = '/home/mayank/Desktop/BTP/Datasets/NUS_WIDE_10k/'
-# base_path = '/home/btp17-18-1/datasets/NUS-WIDE-10k_Dataset/'
-nus_wide_10k_loader.setup_batch(base_path, 0.90, 0.20)
-def generate_next_batch(domain, batch_size, kind):
-    if domain=='source' and kind=='train':
-        text_image_label = nus_wide_10k_loader.get_batch_source_train(batch_size)
-    elif domain=='source' and kind=='test':
-        text_image_label = nus_wide_10k_loader.get_batch_source_test(batch_size)
-    elif domain=='target' and kind=='train': 
-        text_image_label = nus_wide_10k_loader.get_batch_target_train(batch_size)
-    elif domain=='target' and kind=='test':
-        text_image_label = nus_wide_10k_loader.get_batch_target_test(batch_size)
-
-    image_batch = np.zeros([batch_size, 256, 256, 3])
-    text_batch = np.zeros([batch_size, 300])
-    label_batch = np.zeros([batch_size, 10])
-    counter = 0
-
-    for text, image, label in text_image_label:
-        text_batch[counter] = text
-
-        temp_image = io.imread(base_path+'Dataset/' + str(image))
-        temp_image = transform.resize(temp_image, (256, 256, 3))
-        temp_image = img_as_float(temp_image)
-        image_batch[counter] = temp_image
-
-        label_batch[counter] = label
-
-        counter+= 1
-
-    return text_batch, image_batch, label_batch
-
 train_epoch = 10
 test_epoch = 1
 
@@ -348,8 +351,8 @@ with tf.Session() as sess:
     sess.run(init_op)
 
     for epoch in range(train_epoch):
-        source_text_batch, source_image_batch, source_label_batch = generate_next_batch('source', 100, 'train')
-        # target_text_batch, target_image_batch, target_label_batch = generate_next_batch('target', 'train')
+        source_text_batch, source_image_batch, source_label_batch = generate_next_batch('source', 'train', 40)
+        # target_text_batch, target_image_batch, target_label_batch = generate_next_batch('target', 'train', 40)
 
         _, c = sess.run([optimizer1, source_l1_loss], feed_dict={source_image_input: source_image_batch, source_text_input: source_text_batch})
         print "Epoch:", epoch, " Source l1 loss =", c
@@ -377,8 +380,8 @@ with tf.Session() as sess:
 
         print
 
-    source_text_batch, source_image_batch, source_label_batch = generate_next_batch('source', 1, 'test')
-    # target_text_batch, target_image_batch, target_label_batch = generate_next_batch('target', 'test')
+    source_text_batch, source_image_batch, source_label_batch = generate_next_batch('source', 'test', 40)
+    # target_text_batch, target_image_batch, target_label_batch = generate_next_batch('target', 'test', 40)
 
     print "Test source image l3 loss =", sess.run(SI_hidden, feed_dict={source_image_input: source_image_batch})
     
